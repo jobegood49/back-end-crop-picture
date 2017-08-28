@@ -1,8 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
 ### Example user template template
 ### Example user template
-keyfile.json
-# IntelliJ project files
+/functions/keyfile.json
 .idea
 *.iml
 out
