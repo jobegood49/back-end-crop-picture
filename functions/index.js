@@ -2,10 +2,10 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp(functions.config().firebase);
 
-var express = require('express');
-var app = express();
-var bodyParser = require('body-parser');
-var multer = require('multer');
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const multer = require('multer');
 const format = require('util').format;
 const Storage = require('@google-cloud/storage');
 
@@ -67,8 +67,6 @@ app.get('/', function(req, res, next) {
 /** API path that will uploads the files */
 
 app.post('/uploads', function(req, res) {
-    console.log("hello file", req);
-    console.log("yo");
     const fs = require('fs');
     const gcs = require('@google-cloud/storage')({
         projectId: 'fileupload-177714',
@@ -77,15 +75,79 @@ app.post('/uploads', function(req, res) {
 
     const bucket = gcs.bucket('doppleruploadfile');
     upload(req,res,function(err){
-        console.log("hello file 2", req.file);
+        //console.log("hello file 2", req.file);
 
         const blob = bucket.file(req.file.originalname);
 
-        const blobStream = blob.createWriteStream();
+        //const blobStream = blob.createWriteStream();
 
-        blobStream.on('error', (err) => {
-            next(err);
+        //console.log(req.file.buffer);
+
+        const im = require('imagemagick');
+
+        //im.readMetadata({
+        //    srcData: req.file.buffer
+        //}, function(err, metadata) {
+        //    if (err) throw err;
+        //    console.log('metadata', metadata.exif.dateTimeOriginal );
+        //});
+        //
+        //im.identify({
+        //    srcData: req.file.buffer
+        //}, function (err, features) {
+        //    if (err) throw err;
+        //    console.log('features', features);
+        //});
+
+        im.crop({
+            srcData: req.file.buffer,
+            width: 200,
+            height: 200,
+            quality: 0.4
+        }, function(err, stdout, stderr) {
+            if (err) throw err;
+            console.log('stdout', stdout);
+            //console.log('blob', blob);
+
+            const blobStream = blob.createWriteStream();
+
+            blobStream.on('error', (err) => {
+                next(err);
+            });
+
+            blobStream.on('finish', () => {
+                // The public URL can be used to directly access the file via HTTP.
+                const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
+                console.log(publicUrl);
+
+                blob
+                    .makePublic()
+                    .then(() => {
+                        console.log('public');
+                    })
+                    .then(() => {
+                        res.status(200).json({
+                            url: publicUrl
+                        });
+
+                    })
+                    .catch((err) => {
+                        console.error('ERROR:', err);
+                    });
+
+                //res.status(200).json({
+                //    url: publicUrl
+                //});
+            });
+
+            blobStream.end(stdout);
         });
+
+        //console.log('stdout2', stdout);
+
+        //blobStream.on('error', (err) => {
+        //    next(err);
+        //});
 
         //blob
         //    .makePublic()
@@ -96,31 +158,32 @@ app.post('/uploads', function(req, res) {
         //        console.error('ERROR:', err);
         //    });
 
-        blobStream.on('finish', () => {
-            // The public URL can be used to directly access the file via HTTP.
-            const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
-            console.log(publicUrl);
-            blob
-                .makePublic()
-                .then(() => {
-                    console.log('public');
-                })
-                .then(() => {
-                    res.status(200).json({
-                        url: publicUrl
-                    });
+        //blobStream.on('finish', () => {
+        //    // The public URL can be used to directly access the file via HTTP.
+        //    const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
+        //    console.log(publicUrl);
+        //
+        //    blob
+        //        .makePublic()
+        //        .then(() => {
+        //            console.log('public');
+        //        })
+        //        .then(() => {
+        //            res.status(200).json({
+        //                url: publicUrl
+        //            });
+        //
+        //        })
+        //        .catch((err) => {
+        //            console.error('ERROR:', err);
+        //        });
+        //
+        //    //res.status(200).json({
+        //    //    url: publicUrl
+        //    //});
+        //});
 
-                })
-                .catch((err) => {
-                    console.error('ERROR:', err);
-                });
-
-            //res.status(200).json({
-            //    url: publicUrl
-            //});
-        });
-
-        blobStream.end(req.file.buffer);
+        //blobStream.end(req.file.buffer);
 
         //if(err){
         //    res.json({error_code:1,err_desc:err});
