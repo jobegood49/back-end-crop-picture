@@ -1,6 +1,6 @@
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-admin.initializeApp(functions.config().firebase);
+//const functions = require('firebase-functions');
+//const admin = require('firebase-admin');
+//admin.initializeApp(functions.config().firebase);
 
 const express = require('express');
 const app = express();
@@ -47,108 +47,82 @@ app.get('/', function(req, res, next) {
     res.send('working');
 });
 
-//our file upload function.
-//router.post('/', function (req, res, next) {
-//    var path = '';
-//    upload(req, res, function (err) {
-//        if (err) {
-//            // An error occurred when uploading
-//            console.log(err);
-//            return res.status(422).send("an Error occured")
-//        }
-//        // No error occured.
-//        path = req.file.path;
-//        return res.send("Upload Completed for "+path);
-//    });
-//})
-
-
-
 /** API path that will uploads the files */
 
 app.post('/uploads', function(req, res) {
     const fs = require('fs');
     const gcs = require('@google-cloud/storage')({
-        projectId: 'fileupload-177714',
+        projectId: 'doppleruploadfile',
         keyFilename: './keyfile.json'
     });
 
-    const bucket = gcs.bucket('doppleruploadfile');
+    const bucket = gcs.bucket('deuploadfile');
     upload(req,res,function(err){
-        //console.log("hello file 2", req.file);
+        console.log("req file", req.file);
 
         const blob = bucket.file(req.file.originalname);
 
-        //const blobStream = blob.createWriteStream();
+        const blobStream = blob.createWriteStream();
 
         //console.log(req.file.buffer);
 
-        const im = require('imagemagick');
+        sharp = require('sharp');
 
-        //im.readMetadata({
-        //    srcData: req.file.buffer
-        //}, function(err, metadata) {
-        //    if (err) throw err;
-        //    console.log('metadata', metadata.exif.dateTimeOriginal );
-        //});
-        //
-        //im.identify({
-        //    srcData: req.file.buffer
-        //}, function (err, features) {
-        //    if (err) throw err;
-        //    console.log('features', features);
-        //});
+        sharp(req.file.buffer)
+            .resize(300, 300)
+            .max()
+            .toBuffer()
+            .then( data => {
+                console.log('data', data);
 
-        im.crop({
-            srcData: req.file.buffer,
-            width: 200,
-            height: 200,
-            quality: 0.4
-        }, function(err, stdout, stderr) {
-            if (err) throw err;
-            console.log('stdout', stdout);
-            //console.log('blob', blob);
-
-            const blobStream = blob.createWriteStream();
-
-            blobStream.on('error', (err) => {
-                next(err);
-            });
-
-            blobStream.on('finish', () => {
-                // The public URL can be used to directly access the file via HTTP.
-                const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
-                console.log(publicUrl);
+                blobStream.on('error', (err) => {
+                    console.error(err);
+                });
 
                 blob
                     .makePublic()
                     .then(() => {
                         console.log('public');
                     })
-                    .then(() => {
-                        res.status(200).json({
-                            url: publicUrl
-                        });
-
-                    })
                     .catch((err) => {
                         console.error('ERROR:', err);
                     });
 
-                //res.status(200).json({
-                //    url: publicUrl
-                //});
-            });
+                blobStream.on('finish', () => {
+                    // The public URL can be used to directly access the file via HTTP.
+                    const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
+                    console.log(publicUrl);
 
-            blobStream.end(stdout);
-        });
+                    blob
+                        .makePublic()
+                        .then(() => {
+                            console.log('public');
+                        })
+                        .then(() => {
+                            res.status(200).json({
+                                url: publicUrl
+                            });
 
-        //console.log('stdout2', stdout);
+                        })
+                        .catch((err) => {
+                            console.error('ERROR:', err);
+                        });
+
+                    //res.status(200).json({
+                    //    url: publicUrl
+                    //});
+                });
+
+                blobStream.end(data);
+
+                return data;
+            })
+            .catch( err => console.error(err));
 
         //blobStream.on('error', (err) => {
-        //    next(err);
+        //    console.error(err);
         //});
-
+        //
         //blob
         //    .makePublic()
         //    .then(() => {
@@ -157,7 +131,7 @@ app.post('/uploads', function(req, res) {
         //    .catch((err) => {
         //        console.error('ERROR:', err);
         //    });
-
+        //
         //blobStream.on('finish', () => {
         //    // The public URL can be used to directly access the file via HTTP.
         //    const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
@@ -182,26 +156,15 @@ app.post('/uploads', function(req, res) {
         //    //    url: publicUrl
         //    //});
         //});
-
+        //
         //blobStream.end(req.file.buffer);
 
-        //if(err){
-        //    res.json({error_code:1,err_desc:err});
-        //    return;
-        //}
-        //res.json({error_code:0,err_desc:null});
     });
 
 });
 
-exports.api = functions.https.onRequest(app);
+//exports.api = functions.https.onRequest(app);
 
-//app.listen('3001', function(){
-//    console.log('running on 3001...');
-//});
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-// exports.helloWorld = functions.https.onRequest((request, response) => {
-//  response.send("Hello from Firebase!");
-// });
+app.listen('3001', function(){
+    console.log('running on 3001...');
+});
