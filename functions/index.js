@@ -59,47 +59,54 @@ app.post('/uploads', function (req, res) {
 
         const blob = bucket.file(req.file.originalname);
 
-        //console.log(req.file.buffer);
+        console.log(req.file.buffer);
         jimp.read(req.file.buffer).then((image) => {
             console.log('image before traitement : ', image);
-            image = image.scale(0.8);
+            image = image.resize(100, 100);
             console.log('image after traitement : ', image);
+
+            console.log('bitmap data', image.bitmap.data);
+
             return image.bitmap.data;
+
         }).then((image) => {
-            console.log('then image', image);
 
-            const blobStream = blob.createWriteStream();
+            console.log('then buffer', image);
 
-            blobStream.on('error', (err) => {
-                console.error(err);
-            });
+        //    const blobStream = blob.createWriteStream();
+        //
+        //    blobStream.on('error', (err) => {
+        //        console.error(err);
+        //    });
+        //
+        //    blobStream.on('finish', () => {
+        //        const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
+        //        console.log(publicUrl);
+        //
+        //        blob
+        //            .makePublic()
+        //            .then(() => {
+        //                console.log('public');
+        //            })
+        //            .then(() => {
+        //                res.status(200).json({
+        //                    url: publicUrl
+        //                });
+        //
+        //            })
+        //            .catch((err) => {
+        //                console.error('ERROR:', err);
+        //            });
+        //    });
+        //
+        //    blobStream.end(image);
+        //
+        //}).
+        //catch((err) => {
+        //    console.log(err);
 
-            blobStream.on('finish', () => {
-                const publicUrl = format(`https://storage.googleapis.com/${bucket.name}/${blob.name}`);
-                console.log(publicUrl);
-
-                blob
-                    .makePublic()
-                    .then(() => {
-                        console.log('public');
-                    })
-                    .then(() => {
-                        res.status(200).json({
-                            url: publicUrl
-                        });
-
-                    })
-                    .catch((err) => {
-                        console.error('ERROR:', err);
-                    });
-            });
-
-            blobStream.end(image);
-
-        }).
-        catch((err) => {
-            console.log(err);
         });
+
 
     });
 
