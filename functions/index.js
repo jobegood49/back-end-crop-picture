@@ -69,8 +69,7 @@ app.post('/uploads', function(req, res) {
         sharp = require('sharp');
 
         sharp(req.file.buffer)
-            .resize(300, 300)
-            .max()
+            .resize(200, 200)
             .toBuffer()
             .then( data => {
                 console.log('data', data);
@@ -115,7 +114,6 @@ app.post('/uploads', function(req, res) {
 
                 blobStream.end(data);
 
-                return data;
             })
             .catch( err => console.error(err));
 
