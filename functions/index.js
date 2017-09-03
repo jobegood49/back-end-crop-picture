@@ -53,13 +53,11 @@ app.post('/uploads', function(req, res) {
 
         //blobCreateProcess(req.file.originalname, req.file.buffer, res)
 
-        blobDeleteProcess(req.file.originalname);
+        //blobDeleteProcess(req.file.originalname);
 
         sharp(req.file.buffer)
             .resize(300, 300)
-            .crop('east')
-            .max()
-            //.withoutEnlargement(true)
+            .embed()
             .toBuffer()
             .then(data => {
                 console.log('resize', data);
